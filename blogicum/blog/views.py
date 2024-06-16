@@ -56,3 +56,11 @@ def post_detail(request, id):
     }
 
     return render(request, 'blog/detail.html', context)
+
+
+def create_post():
+    pass
+
+
+def profile():
+    pass
