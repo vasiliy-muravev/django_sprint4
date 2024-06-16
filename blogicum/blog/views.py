@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from django.views.generic import DetailView
 
-from .models import Post, Category
+from .models import Post, Category, User
 
 
 def index(request):
@@ -62,5 +63,27 @@ def create_post():
     pass
 
 
-def profile():
+def edit_profile():
     pass
+
+
+class ProfileView(DetailView):
+    model = User
+    template_name = 'blog/profile.html'
+
+    def get_object(self, **kwargs):
+        return get_object_or_404(User, username=self.kwargs['username'])
+
+    def get_queryset(self):
+        return Post.objects.select_related('author').filter(
+            author_id=self.get_object().id
+        )
+
+    def get_context_data(self, **kwargs):
+        # Получаем словарь контекста:
+        context = super().get_context_data(**kwargs)
+        # Добавляем в словарь новый ключ:
+        context['profile'] = self.get_object()
+        context['page_obj'] = self.get_queryset()
+        # Возвращаем словарь контекста.
+        return context
