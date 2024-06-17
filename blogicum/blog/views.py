@@ -1,6 +1,9 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import DetailView
+from django.urls import reverse_lazy
+from django.views.generic import DetailView, UpdateView
 
+from .forms import UserForm
 from .models import Post, Category, User
 
 
@@ -63,10 +66,6 @@ def create_post():
     pass
 
 
-def edit_profile():
-    pass
-
-
 class ProfileView(DetailView):
     model = User
     template_name = 'blog/profile.html'
@@ -87,3 +86,18 @@ class ProfileView(DetailView):
         context['page_obj'] = self.get_queryset()
         # Возвращаем словарь контекста.
         return context
+
+
+class EditProfileView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserForm
+    template_name = 'blog/user.html'
+
+    def get_success_url(self):
+        return reverse_lazy(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
+
+    def get_object(self, **kwargs):
+        return self.request.user
