@@ -1,20 +1,20 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import DetailView, UpdateView
+from django.views.generic import DetailView, UpdateView, ListView
+from django.core.paginator import Paginator
+
+from datetime import datetime
 
 from .forms import UserForm
 from .models import Post, Category, User
 
 
-def index(request):
-    template = 'blog/index.html'
-    post_list = Post.objects.order_by('-created_at')[:5]
-    context = {
-        'post_list': post_list,
-    }
-
-    return render(request, template, context)
+class PostListView(ListView):
+    model = Post
+    template_name = 'blog/index.html'
+    ordering = 'created_at'
+    paginate_by = 10
 
 
 def category_posts(request, category_slug):
@@ -66,7 +66,32 @@ def create_post():
     pass
 
 
-class ProfileView(DetailView):
+class CategoryListView(ListView):
+    model = Category
+    paginate_by = 10
+    template_name = 'blog/category.html'
+
+    def get_object(self):
+        return get_object_or_404(Category, slug=self.kwargs['category_slug'])
+
+    def get_queryset(self):
+        page_obj = Post.objects.filter(
+            category=self.get_object(),
+            is_published=True,
+            pub_date__lte=datetime.now()
+        )
+        return page_obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = self.get_object()
+        paginator = Paginator(self.get_queryset(), 10)
+        page_obj = paginator.get_page(self.request.GET.get('page'))
+        context['page_obj'] = page_obj
+        return context
+
+
+class ProfileView(ListView):
     model = User
     template_name = 'blog/profile.html'
 
@@ -79,12 +104,11 @@ class ProfileView(DetailView):
         )
 
     def get_context_data(self, **kwargs):
-        # Получаем словарь контекста:
         context = super().get_context_data(**kwargs)
-        # Добавляем в словарь новый ключ:
         context['profile'] = self.get_object()
-        context['page_obj'] = self.get_queryset()
-        # Возвращаем словарь контекста.
+        paginator = Paginator(self.get_queryset(), 10)
+        page_obj = paginator.get_page(self.request.GET.get('page'))
+        context['page_obj'] = page_obj
         return context
 
 
