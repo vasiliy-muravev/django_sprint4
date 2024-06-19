@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy, reverse
-from django.views.generic import DetailView, UpdateView, ListView, CreateView
+from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from django.core.paginator import Paginator
 
 from datetime import datetime
@@ -105,8 +105,22 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
             kwargs={'post_id': self.kwargs['post_id']}
         )
 
-class CommentDeleteView(LoginRequiredMixin, DetailView):
-    pass
+
+class CommentDeleteView(LoginRequiredMixin, DeleteView):
+    model = Comment
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'comment_id'
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.kwargs['post_id']}
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['post'] = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        return context
 
 
 class CategoryListView(ListView):
