@@ -6,8 +6,8 @@ from django.core.paginator import Paginator
 
 from datetime import datetime
 
-from .forms import UserForm, PostForm
-from .models import Post, Category, User
+from .forms import UserForm, PostForm, CommentForm
+from .models import User, Post, Category, Comment
 
 
 class PostListView(ListView):
@@ -33,49 +33,73 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-def category_posts(request, category_slug):
-    """
-    Работает, но не проходит тесты.
-    category = Category.objects.get(is_published=True, slug=category_slug)
-    """
-    category = (
-        Category.objects.filter(is_published=True, slug=category_slug).first()
-    )
+class PostDetailView(LoginRequiredMixin, DetailView):
+    model = Post
+    template_name = 'blog/detail.html'
 
-    if not category:
-        context = {'message': 'Категория не найдена'}
-        return render(
-            request, 'blog/not_found_error.html', context, status=404
+    def get_object(self, **kwargs):
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        if post.author == self.request.user:
+            return post
+        else:
+            return get_object_or_404(Post.objects.filter(
+                is_published=True,
+                pub_date__date__lte=datetime.now()
+            ), pk=self.kwargs.get('post_id'))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['post'] = self.get_object()
+        context['comments'] = (
+            self.object.comments.select_related('author')
+        )
+        context['form'] = CommentForm()
+
+        return context
+
+
+class PostUpdateView(LoginRequiredMixin, CreateView):
+    pass
+
+
+class PostDeleteView(LoginRequiredMixin, DetailView):
+    pass
+
+
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'post_id'
+
+    def get_object(self, **kwargs):
+        return get_object_or_404(Post, pk=self.kwargs['post_id'])
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.post = self.get_object()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.kwargs['post_id']}
         )
 
-    template = 'blog/category.html'
-    post_list = (
-        Post.objects
-        .filter(category_id=category)
-        .order_by('-created_at')
-    )
-    context = {
-        'category': category_slug,
-        'post_list': post_list
-    }
-
-    return render(request, template, context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['comment'] = self.get_object()
+        context['form'] = CommentForm()
+        return context
 
 
-def post_detail(request, id):
-    post = Post.objects.filter(pk=id).first()
+class CommentUpdateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
 
-    if not post:
-        context = {'message': 'Публикация не найдена'}
-        return render(
-            request, 'blog/not_found_error.html', context, status=404
-        )
 
-    context = {
-        'post': post
-    }
-
-    return render(request, 'blog/detail.html', context)
+class CommentDeleteView(LoginRequiredMixin, DetailView):
+    pass
 
 
 class CategoryListView(ListView):
