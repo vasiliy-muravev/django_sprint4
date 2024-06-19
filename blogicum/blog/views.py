@@ -93,10 +93,17 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class CommentUpdateView(LoginRequiredMixin, CreateView):
+class CommentUpdateView(LoginRequiredMixin, UpdateView):
     model = Comment
     form_class = CommentForm
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'comment_id'
 
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.kwargs['post_id']}
+        )
 
 class CommentDeleteView(LoginRequiredMixin, DetailView):
     pass
