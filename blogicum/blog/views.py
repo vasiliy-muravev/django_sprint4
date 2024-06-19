@@ -1,12 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
-from django.urls import reverse_lazy
-from django.views.generic import DetailView, UpdateView, ListView
+from django.urls import reverse_lazy, reverse
+from django.views.generic import DetailView, UpdateView, ListView, CreateView
 from django.core.paginator import Paginator
 
 from datetime import datetime
 
-from .forms import UserForm
+from .forms import UserForm, PostForm
 from .models import Post, Category, User
 
 
@@ -15,6 +15,22 @@ class PostListView(ListView):
     template_name = 'blog/index.html'
     ordering = 'created_at'
     paginate_by = 10
+
+
+class PostCreateView(LoginRequiredMixin, CreateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
 
 
 def category_posts(request, category_slug):
@@ -60,10 +76,6 @@ def post_detail(request, id):
     }
 
     return render(request, 'blog/detail.html', context)
-
-
-def create_post():
-    pass
 
 
 class CategoryListView(ListView):

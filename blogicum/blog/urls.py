@@ -1,14 +1,19 @@
 from django.urls import path
 
-from .views import post_detail, category_posts, create_post, ProfileView, EditProfileView, PostListView, \
-    CategoryListView
+from .views import post_detail, category_posts, ProfileView, EditProfileView, PostListView, \
+    CategoryListView, PostCreateView
 
 app_name = 'blog'
 
 urlpatterns = [
     path('', PostListView.as_view(), name='index'),
     path('posts/<int:id>/', post_detail, name='post_detail'),
-    path('posts/', create_post, name='create_post'),
+    path(
+        'posts/create/',
+        PostCreateView.as_view(),
+        name='create_post'
+    ),
+    # path('posts/', create_post, name='create_post'),
     path(
         'category/<slug:category_slug>/',
         CategoryListView.as_view(),
