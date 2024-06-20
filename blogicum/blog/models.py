@@ -101,9 +101,13 @@ class Post(PublishedModel):
         blank=False,
         null=True
     )
+    image = models.ImageField('Фото', upload_to='post_images/', null=True, blank=True)
 
     # Базовый запрос постов
     objects = BasePostManager()
+
+    def comment_count(self):
+        return self.comments.count()
 
     class Meta:
         verbose_name = 'публикация'
