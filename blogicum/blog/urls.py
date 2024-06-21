@@ -51,6 +51,14 @@ urlpatterns = [
         CategoryListView.as_view(),
         name='category_posts'
     ),
-    path('profile/<str:username>/', ProfileView.as_view(), name='profile'),
-    path('profile/<str:username>/edit/', EditProfileView.as_view(), name='edit_profile'),
+    path(
+        'profile/<str:username>/',
+        ProfileView.as_view(),
+        name='profile'
+    ),
+    path(
+        'profile/<str:username>/edit/',
+        EditProfileView.as_view(),
+        name='edit_profile'
+    ),
 ]

@@ -63,6 +63,14 @@ class BasePostManager(models.Manager):
         )
 
 
+class AllPostManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super().get_queryset()
+            .select_related('category', 'author', 'location')
+        )
+
+
 class Post(PublishedModel):
     title = models.CharField(
         'Заголовок',
@@ -105,6 +113,7 @@ class Post(PublishedModel):
 
     # Базовый запрос постов
     objects = BasePostManager()
+    objects_all = AllPostManager()
 
     def comment_count(self):
         return self.comments.count()

@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.views.generic import TemplateView
 
 
 def csrf_failure(request, reason=''):
@@ -13,9 +14,9 @@ def server_error(request):
     return render(request, 'pages/500.html', status=500)
 
 
-def about(request):
-    return render(request, 'pages/about.html')
+class AboutPage(TemplateView):
+    template_name = 'pages/about.html'
 
 
-def rules(request):
-    return render(request, 'pages/rules.html')
+class RulesPage(TemplateView):
+    template_name = 'pages/rules.html'

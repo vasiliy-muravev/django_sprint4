@@ -1,9 +1,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from django.core.paginator import Paginator
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.utils import timezone
 
 from datetime import datetime
 
@@ -20,7 +22,7 @@ class OnlyAuthorMixin(UserPassesTestMixin):
 class PostListView(ListView):
     model = Post
     template_name = 'blog/index.html'
-    ordering = 'created_at'
+    ordering = '-pub_date'
     paginate_by = 10
 
 
@@ -168,7 +170,10 @@ class CategoryListView(ListView):
     template_name = 'blog/category.html'
 
     def get_object(self):
-        return get_object_or_404(Category, slug=self.kwargs['category_slug'])
+        category = get_object_or_404(Category, slug=self.kwargs['category_slug'])
+        if not category.is_published:
+            raise Http404()
+        return category
 
     def get_queryset(self):
         page_obj = Post.objects.filter(
@@ -181,7 +186,7 @@ class CategoryListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['category'] = self.get_object()
-        paginator = Paginator(self.get_queryset(), 10)
+        paginator = Paginator(self.get_queryset().order_by('-pub_date'), 10)
         page_obj = paginator.get_page(self.request.GET.get('page'))
         context['page_obj'] = page_obj
         return context
@@ -195,16 +200,20 @@ class ProfileView(ListView):
         return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self):
-        return Post.objects.select_related('author').filter(
-            author_id=self.get_object().id
-        )
+        if self.request.user == self.get_object():
+            return Post.objects_all.filter(
+                author_id=self.get_object().id,
+            )
+        else:
+            return Post.objects.filter(
+                author_id=self.get_object().id,
+            )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['profile'] = self.get_object()
-        paginator = Paginator(self.get_queryset(), 10)
-        page_obj = paginator.get_page(self.request.GET.get('page'))
-        context['page_obj'] = page_obj
+        paginator = Paginator(self.get_queryset().order_by('-pub_date'), 10)
+        context['page_obj'] = paginator.get_page(self.request.GET.get('page'))
         return context
 
 
