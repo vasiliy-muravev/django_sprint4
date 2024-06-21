@@ -109,7 +109,11 @@ class Post(PublishedModel):
         blank=False,
         null=True
     )
-    image = models.ImageField('Фото', upload_to='post_images/', null=True, blank=True)
+    image = models.ImageField(
+        'Фото',
+        upload_to='post_images/',
+        null=True, blank=True
+    )
 
     # Базовый запрос постов
     objects = BasePostManager()

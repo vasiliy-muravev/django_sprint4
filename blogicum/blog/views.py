@@ -1,11 +1,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
-from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
+from django.views.generic import (DetailView, UpdateView,
+                                  ListView, CreateView, DeleteView)
 from django.core.paginator import Paginator
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.utils import timezone
 
 from datetime import datetime
 
@@ -170,7 +170,9 @@ class CategoryListView(ListView):
     template_name = 'blog/category.html'
 
     def get_object(self):
-        category = get_object_or_404(Category, slug=self.kwargs['category_slug'])
+        category = get_object_or_404(
+            Category, slug=self.kwargs['category_slug']
+        )
         if not category.is_published:
             raise Http404()
         return category
