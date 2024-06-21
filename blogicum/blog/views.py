@@ -47,7 +47,7 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, **kwargs):
-        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        post = Post.objects_all.get(pk=self.kwargs['post_id'])
         if post.author == self.request.user:
             return post
         else:
@@ -114,7 +114,11 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, **kwargs):
-        return get_object_or_404(Post, pk=self.kwargs['post_id'])
+        # При попытке создания комментария к несуществующему посту возвращается статус 404.
+        post = Post.objects_all.get(pk=self.kwargs['post_id'])
+        if not post.is_published:
+            raise Http404()
+        return post
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -129,7 +133,6 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['comment'] = self.get_object()
         context['form'] = CommentForm()
         return context
 
@@ -225,6 +228,13 @@ class EditProfileView(LoginRequiredMixin, UpdateView):
     template_name = 'blog/user.html'
 
     def get_object(self, **kwargs):
+        # Запрещаем заходить не владельцу на страницу редактирования чужого пользователя.
+        if not self.request.user.username == self.kwargs['username']:
+            raise Http404()
+        # Запрещаем если объект текущего пользователя не совпадает с объектом из базы.
+        user = User.objects.get(username=self.kwargs['username'])
+        if not user == self.request.user:
+            raise Http404()
         return self.request.user
 
     def get_success_url(self):
