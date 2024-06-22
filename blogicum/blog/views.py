@@ -114,7 +114,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, **kwargs):
-        # При попытке создания комментария к несуществующему посту возвращается статус 404.
+        # При попытке создания комментария
+        # к несуществующему посту возвращается статус 404.
         post = Post.objects_all.get(pk=self.kwargs['post_id'])
         if not post.is_published:
             raise Http404()
@@ -228,10 +229,12 @@ class EditProfileView(LoginRequiredMixin, UpdateView):
     template_name = 'blog/user.html'
 
     def get_object(self, **kwargs):
-        # Запрещаем заходить не владельцу на страницу редактирования чужого пользователя.
+        # Запрещаем заходить не владельцу
+        # на страницу редактирования чужого пользователя.
         if not self.request.user.username == self.kwargs['username']:
             raise Http404()
-        # Запрещаем если объект текущего пользователя не совпадает с объектом из базы.
+        # Запрещаем если объект текущего пользователя
+        # не совпадает с объектом из базы.
         user = User.objects.get(username=self.kwargs['username'])
         if not user == self.request.user:
             raise Http404()
