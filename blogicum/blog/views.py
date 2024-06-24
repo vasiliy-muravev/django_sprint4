@@ -1,6 +1,7 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import (DetailView, UpdateView,
                                   ListView, CreateView, DeleteView)
@@ -32,8 +33,10 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/create.html'
 
     def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
+        if form.is_valid():
+            form.instance.author = self.request.user
+            form.save()
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse(
@@ -47,23 +50,18 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, **kwargs):
-        post = Post.objects_all.get(pk=self.kwargs['post_id'])
-        if post.author == self.request.user:
-            return post
-        else:
-            return get_object_or_404(Post.objects.filter(
-                is_published=True,
-                pub_date__date__lte=datetime.now()
-            ), pk=self.kwargs.get('post_id'))
+        return get_object_or_404(Post, pk=self.kwargs['post_id'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['post'] = self.get_object()
         context['comments'] = (
-            self.object.comments.select_related('author')
+            self.object
+            .comments
+            .select_related('author')
+            .order_by('-created_at')
         )
         context['form'] = CommentForm()
-
         return context
 
 
@@ -107,35 +105,74 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
         )
 
 
+# class CommentCreateView(LoginRequiredMixin, CreateView):
+#     model = Comment
+#     form_class = CommentForm
+#     template_name = 'blog/comment.html'
+#     pk_url_kwarg = 'post_id'
+#
+#     def get_object(self, **kwargs):
+#         # При попытке создания комментария
+#         # к несуществующему посту возвращается статус 404.
+#         return get_object_or_404(Post, pk=self.kwargs['post_id'])
+#
+#     def form_valid(self, form):
+#         form.instance.author = self.request.user
+#         form.instance.post = self.get_object()
+#         return super().form_valid(form)
+#
+#     def get_success_url(self):
+#         return reverse(
+#             'blog:post_detail',
+#             kwargs={'post_id': self.kwargs['post_id']}
+#         )
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['form'] = CommentForm()
+#         return context
+
+
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
-    template_name = 'blog/comment.html'
     pk_url_kwarg = 'post_id'
 
-    def get_object(self, **kwargs):
-        # При попытке создания комментария
-        # к несуществующему посту возвращается статус 404.
-        post = Post.objects_all.get(pk=self.kwargs['post_id'])
-        if not post.is_published:
-            raise Http404()
-        return post
+    def get_object(self, queryset=None):
+        return get_object_or_404(Post, id=self.kwargs[self.pk_url_kwarg])
 
     def form_valid(self, form):
-        form.instance.author = self.request.user
-        form.instance.post = self.get_object()
-        return super().form_valid(form)
+        if form.is_valid():
+            form.instance.author = self.request.user
+            form.instance.post = self.get_object()
+            form.save()
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse(
+        return reverse_lazy(
             'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
+            kwargs={'post_id': self.kwargs[self.pk_url_kwarg]}
         )
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CommentForm()
-        return context
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.author = request.user
+            comment.post = post
+            comment.save()
+            return redirect('blog:post_detail', post_id=post_id)
+    else:
+        form = CommentForm()
+    return render(
+        request, 'blog/detail.html',
+        {'form': form, 'post': post}
+    )
 
 
 class CommentUpdateView(OnlyAuthorMixin, UpdateView):
@@ -186,13 +223,13 @@ class CategoryListView(ListView):
             category=self.get_object(),
             is_published=True,
             pub_date__lte=datetime.now()
-        )
+        ).order_by('-pub_date')
         return page_obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['category'] = self.get_object()
-        paginator = Paginator(self.get_queryset().order_by('-pub_date'), 10)
+        paginator = Paginator(self.get_queryset(), 10)
         page_obj = paginator.get_page(self.request.GET.get('page'))
         context['page_obj'] = page_obj
         return context
@@ -228,16 +265,7 @@ class EditProfileView(LoginRequiredMixin, UpdateView):
     form_class = UserForm
     template_name = 'blog/user.html'
 
-    def get_object(self, **kwargs):
-        # Запрещаем заходить не владельцу
-        # на страницу редактирования чужого пользователя.
-        if not self.request.user.username == self.kwargs['username']:
-            raise Http404()
-        # Запрещаем если объект текущего пользователя
-        # не совпадает с объектом из базы.
-        user = User.objects.get(username=self.kwargs['username'])
-        if not user == self.request.user:
-            raise Http404()
+    def get_object(self):
         return self.request.user
 
     def get_success_url(self):

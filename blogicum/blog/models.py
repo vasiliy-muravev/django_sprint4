@@ -115,8 +115,9 @@ class Post(PublishedModel):
         null=True, blank=True
     )
 
-    # Базовый запрос постов
+    # Опубликованные посты
     objects = BasePostManager()
+    # Все посты
     objects_all = AllPostManager()
 
     def comment_count(self):
@@ -130,7 +131,7 @@ class Post(PublishedModel):
         return self.title
 
 
-class Comment(PublishedModel):
+class Comment(models.Model):
     text = models.TextField(
         'Текст',
         help_text='Текст комментария'
@@ -146,6 +147,11 @@ class Comment(PublishedModel):
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Автор публикации'
+    )
+    created_at = models.DateTimeField(
+        verbose_name='Добавлено',
+        auto_now_add=True,
+        help_text='Дата публикации может быть использована при сортировке'
     )
 
     class Meta:
