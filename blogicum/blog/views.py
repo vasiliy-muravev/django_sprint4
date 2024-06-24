@@ -50,7 +50,7 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, **kwargs):
-        return get_object_or_404(Post, pk=self.kwargs['post_id'])
+        return get_object_or_404(Post.objects_all, pk=self.kwargs['post_id'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -138,13 +138,11 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     form_class = CommentForm
     pk_url_kwarg = 'post_id'
 
-    def get_object(self, queryset=None):
-        return get_object_or_404(Post, id=self.kwargs[self.pk_url_kwarg])
-
     def form_valid(self, form):
+        post = get_object_or_404(Post, id=self.kwargs[self.pk_url_kwarg])
         if form.is_valid():
             form.instance.author = self.request.user
-            form.instance.post = self.get_object()
+            form.instance.post = post
             form.save()
         return redirect(self.get_success_url())
 
