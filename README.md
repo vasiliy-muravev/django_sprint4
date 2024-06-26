@@ -8,35 +8,33 @@ git clone git@github.com:vasiliy-muravev/django_sprint4.git
 ```
 **2. Создание окружения.**
 
-В корневой папке проекта создайте виртуальное окружение, используя команду
+В корневой папке проекта создайте и активируйте виртуальное окружение
 ```
 python3 -m venv venv
-```
-Активируйте виртуальное окружение командой
-```
 source venv/bin/activate
 ```
 
-**3. Установка зависимостей.**
+**3. Обновление pip и установка зависимостей.**
  
 Находясь в корневой папке проекта, выполните команду
 ```
-pip install requirements.txt
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-**4. Запуск проекта.**
- 
-Находясь в папке Django-проекта blogicum, выполните команду
-```
-python3 manage.py runserver
-```
-
-**5. Миграции и загрузка фикстур.**
+**4. Миграции и загрузка фикстур.**
  
 Находясь в папке Django-проекта blogicum, выполните команды
 ```
 python manage.py migrate
-python manage.py loaddata ./../db.json
+python manage.py loaddata db.json
+```
+
+**5. Запуск проекта.**
+ 
+Находясь в папке Django-проекта blogicum, выполните команду
+```
+python3 manage.py runserver
 ```
 
 **6. Создание суперпользователя.**
