@@ -59,7 +59,7 @@ class PostDetailView(DetailView):
             self.object
             .comments
             .select_related('author')
-            .order_by('-created_at')
+            .order_by('created_at')
         )
         context['form'] = CommentForm()
         return context
