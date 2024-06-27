@@ -105,34 +105,6 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
         )
 
 
-# class CommentCreateView(LoginRequiredMixin, CreateView):
-#     model = Comment
-#     form_class = CommentForm
-#     template_name = 'blog/comment.html'
-#     pk_url_kwarg = 'post_id'
-#
-#     def get_object(self, **kwargs):
-#         # При попытке создания комментария
-#         # к несуществующему посту возвращается статус 404.
-#         return get_object_or_404(Post, pk=self.kwargs['post_id'])
-#
-#     def form_valid(self, form):
-#         form.instance.author = self.request.user
-#         form.instance.post = self.get_object()
-#         return super().form_valid(form)
-#
-#     def get_success_url(self):
-#         return reverse(
-#             'blog:post_detail',
-#             kwargs={'post_id': self.kwargs['post_id']}
-#         )
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context['form'] = CommentForm()
-#         return context
-
-
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
@@ -151,26 +123,6 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
             'blog:post_detail',
             kwargs={'post_id': self.kwargs[self.pk_url_kwarg]}
         )
-
-
-@login_required
-def add_comment(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
-
-    if request.method == 'POST':
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.author = request.user
-            comment.post = post
-            comment.save()
-            return redirect('blog:post_detail', post_id=post_id)
-    else:
-        form = CommentForm()
-    return render(
-        request, 'blog/detail.html',
-        {'form': form, 'post': post}
-    )
 
 
 class CommentUpdateView(OnlyAuthorMixin, UpdateView):

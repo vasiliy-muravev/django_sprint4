@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (ProfileView, EditProfileView, PostListView,
                     CategoryListView, PostCreateView, PostDetailView,
                     PostUpdateView, PostDeleteView, CommentCreateView,
-                    CommentDeleteView, CommentUpdateView, add_comment)
+                    CommentDeleteView, CommentUpdateView)
 
 app_name = 'blog'
 
@@ -36,7 +36,6 @@ urlpatterns = [
     path(
         'posts/<int:post_id>/comment/',
         CommentCreateView.as_view(),
-        # add_comment,
         name='add_comment'
     ),
     path(

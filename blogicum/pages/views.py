@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 
 
-def csrf_failure(request, reason=''):
+def csrf_failure(request, reason='', exception=None):
     return render(request, 'pages/403csrf.html', status=403)
 
 
