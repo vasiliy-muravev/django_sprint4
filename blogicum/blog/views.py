@@ -1,7 +1,6 @@
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import (DetailView, UpdateView,
@@ -64,7 +63,10 @@ class PostDetailView(DetailView):
         if post.author == self.request.user:
             return post
         else:
-            return get_object_or_404(Post.published_posts, pk=self.kwargs.get('post_id'))
+            return get_object_or_404(
+                Post.published_posts,
+                pk=self.kwargs.get('post_id')
+            )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
