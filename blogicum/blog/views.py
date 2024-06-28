@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy, reverse
+from django.http import HttpResponseRedirect
 from django.views.generic import (DetailView, UpdateView,
                                   ListView, CreateView, DeleteView)
 from django.core.paginator import Paginator
@@ -15,9 +16,15 @@ from .models import User, Post, Category, Comment
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        object = self.get_object()
-        return object.author == self.request.user
+    def test_func(self, **kwargs):
+        return self.get_object().author == self.request.user
+
+    def handle_no_permission(self):
+        return HttpResponseRedirect(
+            reverse_lazy(
+                'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
+            )
+        )
 
 
 class PostListView(ListView):
@@ -25,6 +32,9 @@ class PostListView(ListView):
     template_name = 'blog/index.html'
     ordering = '-pub_date'
     paginate_by = 10
+
+    def get_queryset(self):
+        return Post.published_posts.all()
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -50,16 +60,17 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, **kwargs):
-        return get_object_or_404(Post.objects_all, pk=self.kwargs['post_id'])
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        if post.author == self.request.user:
+            return post
+        else:
+            return get_object_or_404(Post.published_posts, pk=self.kwargs.get('post_id'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['post'] = self.get_object()
         context['comments'] = (
-            self.object
-            .comments
-            .select_related('author')
-            .order_by('created_at')
+            self.object.comments.select_related('author')
         )
         context['form'] = CommentForm()
         return context
@@ -79,12 +90,6 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
     def form_valid(self, form):
         form.instance.author = self.request.user
         return super().form_valid(form)
-
-    def handle_no_permission(self):
-        return redirect(
-            'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
-        )
 
     def get_success_url(self):
         return reverse(
@@ -194,11 +199,11 @@ class ProfileView(ListView):
 
     def get_queryset(self):
         if self.request.user == self.get_object():
-            return Post.objects_all.filter(
+            return Post.objects.filter(
                 author_id=self.get_object().id,
             )
         else:
-            return Post.objects.filter(
+            return Post.published_posts.filter(
                 author_id=self.get_object().id,
             )
 

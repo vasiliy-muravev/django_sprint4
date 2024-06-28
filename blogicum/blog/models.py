@@ -50,25 +50,15 @@ class Location(PublishedModel):
         return self.name
 
 
-class BasePostManager(models.Manager):
+class PublishedPostManager(models.Manager):
     def get_queryset(self):
-        return (
-            super().get_queryset()
-            .select_related('category', 'author', 'location')
-            .filter(
-                is_published=True,
-                category__is_published=True,
-                pub_date__lte=now()
-            )
-        )
-
-
-class AllPostManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super().get_queryset()
-            .select_related('category', 'author', 'location')
-        )
+        return super().get_queryset().filter(
+            is_published=True,
+            category__is_published=True,
+            pub_date__lte=now()
+        ).annotate(
+            comment_count=models.Count('comments')
+        ).order_by('-pub_date')
 
 
 class Post(PublishedModel):
@@ -115,10 +105,10 @@ class Post(PublishedModel):
         null=True, blank=True
     )
 
-    # Опубликованные посты
-    objects = BasePostManager()
-    # Все посты
-    objects_all = AllPostManager()
+    # Все посты.
+    objects = models.Manager()
+    # Опубликованные посты.
+    published_posts = PublishedPostManager()
 
     def comment_count(self):
         return self.comments.count()
