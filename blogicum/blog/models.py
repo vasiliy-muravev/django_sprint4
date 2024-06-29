@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.utils.timezone import now
+from django.utils import timezone
 
 from core.models import PublishedModel
+
 
 User = get_user_model()
 
@@ -55,7 +56,7 @@ class PublishedPostManager(models.Manager):
         return super().get_queryset().filter(
             is_published=True,
             category__is_published=True,
-            pub_date__lte=now()
+            pub_date__lte=timezone.now()
         ).annotate(
             comment_count=models.Count('comments')
         ).order_by('-pub_date')
@@ -109,9 +110,6 @@ class Post(PublishedModel):
     objects = models.Manager()
     # Опубликованные посты.
     published_posts = PublishedPostManager()
-
-    def comment_count(self):
-        return self.comments.count()
 
     class Meta:
         verbose_name = 'публикация'

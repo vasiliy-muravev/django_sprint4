@@ -1,9 +1,18 @@
 from django.urls import path
 
-from .views import (ProfileView, EditProfileView, PostListView,
-                    CategoryListView, PostCreateView, PostDetailView,
-                    PostUpdateView, PostDeleteView, CommentCreateView,
-                    CommentDeleteView, CommentUpdateView)
+from .views import (
+    CategoryListView,
+    CommentCreateView,
+    CommentUpdateView,
+    CommentDeleteView,
+    PostListView,
+    PostCreateView,
+    PostDetailView,
+    PostUpdateView,
+    PostDeleteView,
+    ProfileListView,
+    ProfileUpdateView,
+)
 
 app_name = 'blog'
 
@@ -55,12 +64,12 @@ urlpatterns = [
     ),
     path(
         'profile/<str:username>/',
-        ProfileView.as_view(),
+        ProfileListView.as_view(),
         name='profile'
     ),
     path(
         'edit_profile/',
-        EditProfileView.as_view(),
+        ProfileUpdateView.as_view(),
         name='edit_profile'
     ),
 ]
